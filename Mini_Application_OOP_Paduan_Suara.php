@@ -6,37 +6,24 @@
  * TUGAS RUMAH PERTEMUAN 5 - ADVANCED OOP
  *
  * 1. DOMAIN
- * Sistem Penjadwalan Latihan Paduan Suara adalah program
- * untuk mengelola data anggota, pelatih, dan jadwal latihan.
+ * Program untuk mengelola data anggota, pelatih, dan jadwal latihan.
  *
  * 2. KANDIDAT CLASS
- *
- * a. Personel
- *    Class induk abstrak yang menyimpan ID dan nama personel.
- *
- * b. Anggota
- *    Class untuk menyimpan data anggota dan jenis suara.
- *    Mewarisi Personel dan menerapkan interface notifikasi.
- *
- * c. Pelatih
- *    Class untuk menyimpan data pelatih dan keahliannya.
- *    Mewarisi Personel dan menerapkan interface notifikasi.
- *
- * d. JadwalLatihan
- *    Class untuk mengelola jadwal, tanggal, lokasi,
- *    materi lagu, pelatih, dan daftar anggota.
+ * - Personel: class induk abstrak yang menyimpan ID dan nama.
+ * - Anggota: menyimpan data anggota dan jenis suara.
+ * - Pelatih: menyimpan data pelatih dan keahliannya.
+ * - JadwalLatihan: mengelola jadwal, pelatih, dan anggota latihan.
  *
  * 3. RELASI ANTARCLASS
  * - Inheritance: Anggota dan Pelatih mewarisi Personel.
- * - Interface: Anggota dan Pelatih menerapkan
- *   BisaDiberiNotifikasi.
- * - Composition/relasi kepemilikan: JadwalLatihan
- *   menyimpan referensi Pelatih dan daftar Anggota.
+ * - Interface: Anggota dan Pelatih menerapkan BisaDiberiNotifikasi.
+ * - Composition: JadwalLatihan membuat dan mengelola objek Pelatih
+ *   serta Anggota sebagai bagian dari jadwal.
  *
  * 4. KONSEP ADVANCED OOP
  * - Abstract class: Personel.
  * - Overriding: getPeran() dan tampilkanInfo().
- * - Polymorphism: tampilkanPersonel().
+ * - Polymorphism: tampilkanPersonel() dan kirimPengingat().
  * - Encapsulation: properti menggunakan private.
  * - Validasi: memeriksa input dan menangani kesalahan.
  */
@@ -160,7 +147,7 @@ class Pelatih extends Personel implements BisaDiberiNotifikasi
     }
 }
 
-// COMPOSITION: jadwal memiliki satu objek Pelatih dan beberapa objek Anggota.
+// COMPOSITION: JadwalLatihan membuat dan mengelola objek Pelatih dan Anggota.
 class JadwalLatihan
 {
     private string $idLatihan;
@@ -168,15 +155,21 @@ class JadwalLatihan
     private string $lokasi;
     private string $materiLagu;
     private Pelatih $pelatih;
+
     /** @var Anggota[] */
     private array $anggota = [];
 
+    /**
+     * $dataPelatih berisi id, nama, dan keahlian.
+     * $daftarAnggota berisi data anggota: id, nama, dan jenisSuara.
+     */
     public function __construct(
         string $idLatihan,
         string $tanggal,
         string $lokasi,
         string $materiLagu,
-        Pelatih $pelatih
+        array $dataPelatih,
+        array $daftarAnggota = []
     ) {
         $this->validasiTeks($idLatihan, 'ID latihan');
         $this->validasiTanggal($tanggal);
@@ -187,7 +180,22 @@ class JadwalLatihan
         $this->tanggal = trim($tanggal);
         $this->lokasi = trim($lokasi);
         $this->materiLagu = trim($materiLagu);
-        $this->pelatih = $pelatih;
+
+        // Objek Pelatih dibuat di dalam JadwalLatihan.
+        $this->pelatih = new Pelatih(
+            $dataPelatih['id'] ?? '',
+            $dataPelatih['nama'] ?? '',
+            $dataPelatih['keahlian'] ?? ''
+        );
+
+        // Objek Anggota dibuat dan disimpan dalam jadwal ini.
+        foreach ($daftarAnggota as $data) {
+            $this->anggota[] = new Anggota(
+                $data['id'] ?? '',
+                $data['nama'] ?? '',
+                $data['jenisSuara'] ?? ''
+            );
+        }
     }
 
     private function validasiTeks(string $nilai, string $field): void
@@ -211,11 +219,6 @@ class JadwalLatihan
         }
     }
 
-    public function tambahAnggota(Anggota $anggota): void
-    {
-        $this->anggota[] = $anggota;
-    }
-
     public function tampilkanJadwal(): void
     {
         echo "ID Latihan : {$this->idLatihan}\n";
@@ -226,11 +229,21 @@ class JadwalLatihan
         echo "Jumlah anggota: " . count($this->anggota) . "\n";
     }
 
+    public function tampilkanDataPersonelJadwal(): void
+    {
+        echo "\n[ DATA PERSONEL DALAM JADWAL ]\n";
+        echo $this->pelatih->tampilkanInfo() . "\n";
+
+        foreach ($this->anggota as $anggota) {
+            echo $anggota->tampilkanInfo() . "\n";
+        }
+    }
+
     public function kirimPengingat(): void
     {
         echo "\n[ NOTIFIKASI LATIHAN ]\n";
 
-        // POLYMORPHISM: anggota dan pelatih diproses melalui interface yang sama.
+        // POLYMORPHISM: anggota dan pelatih menggunakan interface yang sama.
         $penerima = $this->anggota;
         $penerima[] = $this->pelatih;
 
@@ -241,8 +254,11 @@ class JadwalLatihan
         }
     }
 
-    public function konfirmasiKehadiran(Anggota $anggota, string $status, string $keterangan = ''): void
-    {
+    public function konfirmasiKehadiran(
+        string $idAnggota,
+        string $status,
+        string $keterangan = ''
+    ): void {
         $statusDiizinkan = ['Hadir', 'Izin', 'Berhalangan'];
         $status = trim($status);
         $keterangan = trim($keterangan);
@@ -255,15 +271,24 @@ class JadwalLatihan
             throw new InvalidArgumentException('Keterangan wajib diisi untuk status Izin atau Berhalangan.');
         }
 
-        echo $anggota->getNama() . ' - Status: ' . $status;
-        if ($keterangan !== '') {
-            echo ' | Keterangan: ' . $keterangan;
+        foreach ($this->anggota as $anggota) {
+            if ($anggota->getId() === $idAnggota) {
+                echo $anggota->getNama() . ' - Status: ' . $status;
+
+                if ($keterangan !== '') {
+                    echo ' | Keterangan: ' . $keterangan;
+                }
+
+                echo "\n";
+                return;
+            }
         }
-        echo "\n";
+
+        throw new InvalidArgumentException("Anggota dengan ID $idAnggota tidak ditemukan pada jadwal ini.");
     }
 }
 
-// FUNGSI POLYMORPHISM: menerima Personel, tetapi hasilnya mengikuti objek konkret.
+// FUNGSI POLYMORPHISM: menerima Personel dan menampilkan informasi sesuai objek.
 function tampilkanPersonel(Personel $personel): void
 {
     echo $personel->tampilkanInfo() . "\n";
@@ -272,6 +297,7 @@ function tampilkanPersonel(Personel $personel): void
 function ujiValidasi(string $judul, callable $aksi): void
 {
     echo "\n$judul\n";
+
     try {
         $aksi();
         echo "Hasil: BERHASIL\n";
@@ -287,46 +313,68 @@ try {
     echo " SISTEM PENJADWALAN LATIHAN PADUAN SUARA\n";
     echo "==================================================\n";
 
-    $pelatih = new Pelatih('P001', 'Maestro Andre', 'Dirigen dan Vokal Klasik');
-    $anggota1 = new Anggota('A001', 'Lidya Nauli', 'Soprano');
-    $anggota2 = new Anggota('A002', 'Budi Santoso', 'Tenor');
-
-    echo "\n[ DATA PERSONEL: CONTOH POLYMORPHISM ]\n";
-    $daftarPersonel = [$pelatih, $anggota1, $anggota2];
-    foreach ($daftarPersonel as $personel) {
-        tampilkanPersonel($personel);
-    }
-
+    // Jadwal membuat objek Pelatih dan Anggota di dalam constructor.
     $jadwal = new JadwalLatihan(
-        'JL001', '2026-10-25', 'Studio Musik Kampus',
-        'Lagu Wajib Nasional', $pelatih
+        'JL001',
+        '2026-10-25',
+        'Studio Musik Kampus',
+        'Lagu Wajib Nasional',
+        [
+            'id' => 'P001',
+            'nama' => 'Maestro Andre',
+            'keahlian' => 'Dirigen dan Vokal Klasik'
+        ],
+        [
+            [
+                'id' => 'A001',
+                'nama' => 'Lidya Nauli',
+                'jenisSuara' => 'Soprano'
+            ],
+            [
+                'id' => 'A002',
+                'nama' => 'Budi Santoso',
+                'jenisSuara' => 'Tenor'
+            ]
+        ]
     );
-    $jadwal->tambahAnggota($anggota1);
-    $jadwal->tambahAnggota($anggota2);
+
+    echo "\n[ DATA PERSONEL ]\n";
+    $jadwal->tampilkanDataPersonelJadwal();
 
     echo "\n[ JADWAL LATIHAN ]\n";
     $jadwal->tampilkanJadwal();
     $jadwal->kirimPengingat();
 
     echo "\n[ KONFIRMASI KEHADIRAN ]\n";
-    $jadwal->konfirmasiKehadiran($anggota1, 'Hadir');
-    $jadwal->konfirmasiKehadiran($anggota2, 'Izin', 'Ada praktikum di kampus');
+    $jadwal->konfirmasiKehadiran('A001', 'Hadir');
+    $jadwal->konfirmasiKehadiran('A002', 'Izin', 'Ada praktikum di kampus');
 
     echo "\n[ PENGUJIAN VALIDASI ]\n";
+
     ujiValidasi('1. Menguji nama anggota kosong', function (): void {
         new Anggota('A003', '   ', 'Alto');
     });
 
-    ujiValidasi('2. Menguji tanggal tidak valid', function () use ($pelatih): void {
-        new JadwalLatihan('JL002', '2026-02-30', 'Aula Kampus', 'Lagu Daerah', $pelatih);
+    ujiValidasi('2. Menguji tanggal tidak valid', function (): void {
+        new JadwalLatihan(
+            'JL002',
+            '2026-02-30',
+            'Aula Kampus',
+            'Lagu Daerah',
+            [
+                'id' => 'P002',
+                'nama' => 'Pelatih Uji',
+                'keahlian' => 'Vokal'
+            ]
+        );
     });
 
-    ujiValidasi('3. Menguji status kehadiran tidak valid', function () use ($jadwal, $anggota1): void {
-        $jadwal->konfirmasiKehadiran($anggota1, 'Mungkin');
+    ujiValidasi('3. Menguji status kehadiran tidak valid', function () use ($jadwal): void {
+        $jadwal->konfirmasiKehadiran('A001', 'Mungkin');
     });
 
-    ujiValidasi('4. Menguji izin tanpa keterangan', function () use ($jadwal, $anggota2): void {
-        $jadwal->konfirmasiKehadiran($anggota2, 'Izin');
+    ujiValidasi('4. Menguji izin tanpa keterangan', function () use ($jadwal): void {
+        $jadwal->konfirmasiKehadiran('A002', 'Izin');
     });
 } catch (Throwable $error) {
     echo "\nKESALAHAN PROGRAM: " . $error->getMessage() . "\n";
