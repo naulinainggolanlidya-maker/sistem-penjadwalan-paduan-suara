@@ -1,9 +1,44 @@
 <?php
 /**
- * MINI APPLICATION OOP: SISTEM PENJADWALAN LATIHAN PADUAN SUARA
- * Berdasarkan tugas rumah Pertemuan 5 - Advanced OOP.
- * Konsep: inheritance, overriding, polymorphism, abstraction,
- * interface, composition, encapsulation, dan validasi.
+ * MINI APPLICATION OOP
+ * SISTEM PENJADWALAN LATIHAN PADUAN SUARA
+ *
+ * TUGAS RUMAH PERTEMUAN 5 - ADVANCED OOP
+ *
+ * 1. DOMAIN
+ * Sistem Penjadwalan Latihan Paduan Suara adalah program
+ * untuk mengelola data anggota, pelatih, dan jadwal latihan.
+ *
+ * 2. KANDIDAT CLASS
+ *
+ * a. Personel
+ *    Class induk abstrak yang menyimpan ID dan nama personel.
+ *
+ * b. Anggota
+ *    Class untuk menyimpan data anggota dan jenis suara.
+ *    Mewarisi Personel dan menerapkan interface notifikasi.
+ *
+ * c. Pelatih
+ *    Class untuk menyimpan data pelatih dan keahliannya.
+ *    Mewarisi Personel dan menerapkan interface notifikasi.
+ *
+ * d. JadwalLatihan
+ *    Class untuk mengelola jadwal, tanggal, lokasi,
+ *    materi lagu, pelatih, dan daftar anggota.
+ *
+ * 3. RELASI ANTARCLASS
+ * - Inheritance: Anggota dan Pelatih mewarisi Personel.
+ * - Interface: Anggota dan Pelatih menerapkan
+ *   BisaDiberiNotifikasi.
+ * - Composition/relasi kepemilikan: JadwalLatihan
+ *   menyimpan referensi Pelatih dan daftar Anggota.
+ *
+ * 4. KONSEP ADVANCED OOP
+ * - Abstract class: Personel.
+ * - Overriding: getPeran() dan tampilkanInfo().
+ * - Polymorphism: tampilkanPersonel().
+ * - Encapsulation: properti menggunakan private.
+ * - Validasi: memeriksa input dan menangani kesalahan.
  */
 
 echo "<pre style='font-family: Consolas, monospace; font-size: 14px;'>";
